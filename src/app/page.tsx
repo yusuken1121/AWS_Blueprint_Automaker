@@ -4,9 +4,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createExamQuestionNote } from "./actions";
 import type { ExamQuestionNote } from "@/features/aws-note/entities/types";
+import mermaid from "mermaid";
 
 export default function HomePage() {
   const [questionText, setQuestionText] = useState("");
@@ -17,6 +18,64 @@ export default function HomePage() {
     notionPageId?: string;
     error?: string;
   } | null>(null);
+  const mermaidRef = useRef<HTMLDivElement>(null);
+
+  // Mermaidの初期化
+  useEffect(() => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "default",
+      securityLevel: "loose",
+    });
+  }, []);
+
+  // ExplanationからMermaidコードを抽出
+  const extractMermaidFromExplanation = useCallback((explanation: string) => {
+    const mermaidMatch = explanation.match(/```mermaid\s*([\s\S]*?)\s*```/);
+    if (mermaidMatch && mermaidMatch.index !== undefined) {
+      return {
+        mermaidCode: mermaidMatch[1].trim(),
+        textBefore: explanation.substring(0, mermaidMatch.index).trim(),
+        textAfter: explanation
+          .substring(mermaidMatch.index + mermaidMatch[0].length)
+          .trim(),
+      };
+    }
+    return null;
+  }, []);
+
+  // Mermaid図をレンダリング
+  useEffect(() => {
+    if (result?.note?.explanation && mermaidRef.current) {
+      const mermaidData = extractMermaidFromExplanation(
+        result.note.explanation
+      );
+      if (mermaidData && mermaidData.mermaidCode) {
+        // 既存の内容をクリア
+        mermaidRef.current.innerHTML = "";
+
+        // ユニークなIDを生成（複数の図がある場合に備えて）
+        const diagramId = `mermaid-diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        mermaid
+          .render(diagramId, mermaidData.mermaidCode)
+          .then(({ svg }) => {
+            if (mermaidRef.current) {
+              mermaidRef.current.innerHTML = svg;
+            }
+          })
+          .catch((error) => {
+            console.error("Mermaid rendering error:", error);
+            if (mermaidRef.current) {
+              mermaidRef.current.innerHTML = `<div class="text-red-600 p-2 bg-red-50 rounded text-sm">Mermaid図のレンダリングエラー: ${error instanceof Error ? error.message : "Unknown error"}</div>`;
+            }
+          });
+      } else if (mermaidRef.current) {
+        // Mermaid図がない場合はクリア
+        mermaidRef.current.innerHTML = "";
+      }
+    }
+  }, [result?.note?.explanation, extractMermaidFromExplanation]);
 
   const handleChoiceChange = (index: number, value: string) => {
     const newChoices = [...choices];
@@ -58,11 +117,15 @@ export default function HomePage() {
             AWS SAA 学習効率最大化システム
           </h1>
           <p className="text-slate-600">
-            Gemini 3 Pro による深い推論とNotion連携で、試験問題の理解を最短距離で習得
+            Gemini 3 Pro
+            による深い推論とNotion連携で、試験問題の理解を最短距離で習得
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="mb-8 bg-white rounded-lg shadow-lg p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="mb-8 bg-white rounded-lg shadow-lg p-6"
+        >
           <div className="space-y-4">
             <div>
               <label
@@ -128,7 +191,9 @@ export default function HomePage() {
                   <h2 className="text-xl font-bold text-slate-900 mb-3">
                     問題文
                   </h2>
-                  <p className="text-slate-700 mb-4">{result.note.questionText}</p>
+                  <p className="text-slate-700 mb-4">
+                    {result.note.questionText}
+                  </p>
 
                   <h3 className="text-lg font-semibold text-slate-800 mb-2">
                     選択肢
@@ -188,10 +253,49 @@ export default function HomePage() {
                   <h3 className="font-bold text-lg mb-2 text-slate-800">
                     解説
                   </h3>
-                  <div className="bg-slate-50 p-4 rounded-lg">
-                    <p className="whitespace-pre-wrap text-slate-700">
-                      {result.note.explanation}
-                    </p>
+                  <div className="bg-slate-50 p-4 rounded-lg space-y-4">
+                    {(() => {
+                      const mermaidData = extractMermaidFromExplanation(
+                        result.note.explanation
+                      );
+                      if (mermaidData && mermaidData.mermaidCode) {
+                        return (
+                          <>
+                            {mermaidData.textBefore && (
+                              <p className="whitespace-pre-wrap text-slate-700">
+                                {mermaidData.textBefore}
+                              </p>
+                            )}
+                            <div className="my-4">
+                              <h4 className="text-sm font-semibold text-slate-600 mb-2">
+                                図解
+                              </h4>
+                              <div
+                                ref={mermaidRef}
+                                className="flex justify-center items-center bg-white p-4 rounded border overflow-x-auto"
+                              />
+                            </div>
+                            {mermaidData.textAfter && (
+                              <p className="whitespace-pre-wrap text-slate-700">
+                                {mermaidData.textAfter}
+                              </p>
+                            )}
+                          </>
+                        );
+                      }
+                      // Mermaid図がない場合（フォールバック）
+                      return (
+                        <>
+                          <p className="whitespace-pre-wrap text-slate-700">
+                            {result.note.explanation}
+                          </p>
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                            ⚠️
+                            図解が含まれていません。次回の生成時に図解が含まれるように改善します。
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </section>
 
@@ -274,4 +378,3 @@ export default function HomePage() {
     </div>
   );
 }
-

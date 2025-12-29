@@ -1,9 +1,9 @@
 /**
  * Gemini 3 Pro API クライアント
- * 高度な推論能力を活用したAWS SAA試験問題の解説生成
+ * 修正版: トークン制限回避のためのプロンプト最適化
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type {
   GeminiQuestionAnalysis,
   ExamQuestionInput,
@@ -37,9 +37,9 @@ const GeminiResponseSchema = z.object({
       explanation: z.string(),
     })
   ),
-  architectureDiagram: z.string().nullish(), // null と undefined の両方を許可
+  architectureDiagram: z.string().nullish(),
   learningPoints: z.array(z.string()),
-  similarQuestionsHint: z.string().nullish(), // null と undefined の両方を許可
+  similarQuestionsHint: z.string().nullish(),
 });
 
 export class GeminiClient {
@@ -51,24 +51,21 @@ export class GeminiClient {
       throw new Error("GEMINI_API_KEY is required");
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Gemini 3 Pro モデルを使用
-    // 注意: Gemini 3 Pro がリリースされ次第、モデル名を更新してください
-    // 現在利用可能なモデル: 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'
-    // Gemini 3 Pro のモデル名が確定したら、ここを更新してください
+
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", // Gemini 3 Pro リリース後は 'gemini-3-pro' などに変更
+      model: "gemini-2.0-flash",
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.5, // 少し創造性を下げて安定させる
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
+        responseMimeType: "application/json",
       },
     });
   }
 
   /**
    * 試験問題から詳細な解説を生成
-   * Reasoning Mode による解答根拠の抽出
    */
   async analyzeQuestion(
     questionInput: ExamQuestionInput
@@ -81,102 +78,103 @@ export class GeminiClient {
     const prompt = this.buildQuestionAnalysisPrompt(questionInput);
 
     try {
-      logger.debug("Sending request to Gemini API");
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
-      logger.debug("Received response from Gemini API", {
-        responseLength: text.length,
-      });
-
-      // JSON形式のレスポンスを抽出
-      const jsonMatch =
-        text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        const error = new Error("Failed to extract JSON from Gemini response");
-        logger.error("Failed to extract JSON from response", error, {
-          responsePreview: text.substring(0, 200),
-        });
-        throw error;
+      // JSONブロックの抽出（安全策）
+      let jsonText = text;
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1];
+      } else {
+        // バッククォートのみの場合の対応
+        jsonText = text.replace(/^```\w*\s*/, "").replace(/\s*```$/, "");
       }
 
-      const jsonText = jsonMatch[1] || jsonMatch[0];
       let parsed: unknown;
       try {
         parsed = JSON.parse(jsonText);
-        // null を undefined に変換（Zodスキーマと型定義の整合性のため）
+
+        // null プロパティのクリーンアップ
         if (parsed && typeof parsed === "object") {
-          const parsedObj = parsed as Record<string, unknown>;
-          if (parsedObj.architectureDiagram === null) {
-            parsedObj.architectureDiagram = undefined;
-          }
-          if (parsedObj.similarQuestionsHint === null) {
-            parsedObj.similarQuestionsHint = undefined;
+          const obj = parsed as Record<string, unknown>;
+          if (obj.architectureDiagram === null)
+            obj.architectureDiagram = undefined;
+          if (obj.similarQuestionsHint === null)
+            obj.similarQuestionsHint = undefined;
+
+          // wellArchitectedCategories の値を正規化
+          // 人間が読みやすい形式から小文字ハイフン形式に変換
+          if (
+            obj.wellArchitectedCategories &&
+            Array.isArray(obj.wellArchitectedCategories)
+          ) {
+            obj.wellArchitectedCategories = obj.wellArchitectedCategories.map(
+              (cat: unknown) => {
+                if (typeof cat !== "string") return cat;
+
+                // マッピング: 人間が読みやすい形式 → 小文字ハイフン形式
+                const mapping: Record<string, string> = {
+                  "Cost Optimization": "cost-optimization",
+                  "cost optimization": "cost-optimization",
+                  "Performance Efficiency": "performance-efficiency",
+                  "performance efficiency": "performance-efficiency",
+                  Reliability: "reliability",
+                  reliability: "reliability",
+                  Security: "security",
+                  security: "security",
+                  "Operational Excellence": "operational-excellence",
+                  "operational excellence": "operational-excellence",
+                  Sustainability: "sustainability",
+                  sustainability: "sustainability",
+                };
+
+                return mapping[cat] || cat.toLowerCase().replace(/\s+/g, "-");
+              }
+            );
           }
         }
       } catch (parseError) {
-        const error = new Error("Failed to parse JSON response");
         logger.error("JSON parsing failed", parseError as Error, {
-          jsonText: jsonText.substring(0, 200),
+          preview: jsonText.substring(0, 200),
+          endOfText: jsonText.substring(Math.max(0, jsonText.length - 200)),
         });
-        throw error;
+        throw new Error(
+          `Failed to parse JSON response: ${(parseError as Error).message}`
+        );
       }
 
       // スキーマ検証
+      let validated;
       try {
-        const validated = GeminiResponseSchema.parse(parsed);
-
-        // null を undefined に変換（型定義との整合性のため）
-        const result: GeminiQuestionAnalysis = {
-          ...validated,
-          architectureDiagram:
-            validated.architectureDiagram === null
-              ? undefined
-              : validated.architectureDiagram,
-          similarQuestionsHint:
-            validated.similarQuestionsHint === null
-              ? undefined
-              : validated.similarQuestionsHint,
-        };
-
-        logger.info("Question analysis completed successfully", {
-          correctAnswer: result.correctAnswer,
-          relatedServicesCount: result.relatedServices.length,
-        });
-        return result;
+        validated = GeminiResponseSchema.parse(parsed);
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
-          const error = new Error(
-            `Schema validation failed: ${validationError.message}`
-          );
-          logger.error("Schema validation failed", error, {
+          logger.error("Schema validation failed", validationError, {
             zodErrors: validationError.errors,
             parsedData: parsed,
           });
-          throw error;
+          throw new Error(
+            `Schema validation failed: ${validationError.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`
+          );
         }
         throw validationError;
       }
+
+      return {
+        ...validated,
+        architectureDiagram: validated.architectureDiagram ?? undefined,
+        similarQuestionsHint: validated.similarQuestionsHint ?? undefined,
+      };
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes("Schema validation")
-      ) {
-        throw error;
-      }
-      const apiError = new Error(
-        `Gemini API error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-      logger.error("Gemini API request failed", error as Error, {
-        questionLength: questionInput.questionText.length,
-      });
-      throw apiError;
+      logger.error("Gemini API request failed", error as Error);
+      throw error;
     }
   }
 
   /**
-   * 高精度な問題解説プロンプトの構築
+   * プロンプト構築（長さを抑制する指示を追加）
    */
   private buildQuestionAnalysisPrompt(
     questionInput: ExamQuestionInput
@@ -185,8 +183,8 @@ export class GeminiClient {
       .map((choice, index) => `${index + 1}. ${choice}`)
       .join("\n");
 
-    return `あなたはAWS Certified Solutions Architect - Associate (SAA) 試験の専門家です。
-以下の試験問題について、深い推論を行って解答と詳細な解説を提供してください。
+    return `あなたはAWS Certified Solutions Architect (SAA) 試験のエキスパートです。
+以下の問題に対する解説を作成してください。
 
 【問題文】
 ${questionInput.questionText}
@@ -194,39 +192,31 @@ ${questionInput.questionText}
 【選択肢】
 ${choicesText}
 
-以下のJSON形式で、厳密に構造化された回答を提供してください。各フィールドは必須です（オプションを除く）。
+以下のJSONスキーマに従って出力してください。
+**重要: 出力が途切れるのを防ぐため、解説は要点を絞って簡潔に記述してください。**
 
 {
-  "correctAnswer": 1, // 正解の選択肢番号（1-4）
-  "correctChoiceText": "正解の選択肢のテキスト",
-  "explanation": "なぜこの答えが正しいのか、詳細な解説。Well-Architected Frameworkの観点も含めて説明。",
-  "relatedServices": ["関連するAWSサービス1", "関連するAWSサービス2"], // この問題で問われているAWSサービス
-  "wellArchitectedCategories": ["cost-optimization", "performance-efficiency", ...], // 該当するWell-Architected Frameworkの柱
+  "correctAnswer": integer,
+  "correctChoiceText": string,
+  "explanation": string, // **重要: 500文字以内で、正解の理由と重要な概念のみを簡潔に説明してください。必ず最後にMermaid.js形式の図解（\`\`\`mermaid ... \`\`\`）を含めてください。**
+  "relatedServices": string[],
+  "wellArchitectedCategories": string[], // **重要: 以下の値のみ使用（小文字、ハイフン区切り）: "cost-optimization", "performance-efficiency", "reliability", "security", "operational-excellence", "sustainability"。人間が読みやすい形式（"Cost Optimization"など）は使用しないでください。**
   "choiceExplanations": [
     {
-      "choiceNumber": 1,
-      "choiceText": "選択肢1のテキスト",
-      "isCorrect": true,
-      "explanation": "なぜこの選択肢が正しい（または間違っている）のかの詳細な説明"
-    },
-    // 各選択肢について同様に記述
+      "choiceNumber": integer,
+      "choiceText": string,
+      "isCorrect": boolean,
+      "explanation": string // **重要: 各選択肢につき1-2文で簡潔に記述してください。**
+    }
   ],
-  "architectureDiagram": "Mermaid.js 形式のアーキテクチャ図コード（該当する場合）。graph TD または graph LR で開始。", // オプション
-  "learningPoints": [
-    "この問題で学ぶべき重要なポイント1",
-    "この問題で学ぶべき重要なポイント2"
-  ],
-  "similarQuestionsHint": "類似問題を解く際のヒント（オプション）"
+  "architectureDiagram": string, // Mermaid.jsコード (graph TD/LR) - オプション
+  "learningPoints": string[], // 3つまで
+  "similarQuestionsHint": string // オプション
 }
 
-重要事項:
-1. correctAnswer は1-4の整数で、選択肢の番号を指定
-2. explanation は「なぜこの答えが正しいのか」をWell-Architected Frameworkの観点も含めて詳しく説明
-3. choiceExplanations は全ての選択肢について、正解・不正解の理由を明確に説明
-4. architectureDiagram は該当する場合のみ提供し、有効なMermaid.js構文であること
-5. learningPoints は試験合格のために重要なポイントを3-5個挙げる
-6. 推論過程を明確に示し、単なる暗記ではなく「なぜ」を理解できるようにする
-
-JSONのみを返してください。`;
+**重要事項:**
+1. wellArchitectedCategories は必ず小文字のハイフン区切り形式で指定してください（例: "cost-optimization" ではなく "Cost Optimization" は不可）
+2. explanation には必ずMermaid.js形式の図解を含めてください（\`\`\`mermaid ... \`\`\`）
+3. JSON文字列内の特殊文字（改行、バッククォートなど）は適切にエスケープしてください`;
   }
 }
