@@ -1,0 +1,119 @@
+# AWS SAA 学習システム - Cursor AI ルール
+
+## プロジェクト概要
+
+AWS Certified Solutions Architect - Associate (SAA) 試験問題の解説を自動生成するシステム。
+Next.js 15 + Gemini 3 Pro + Notion を使用した問題ベースの学習支援ツール。
+
+## アーキテクチャ
+
+### Clean Architecture パターン
+
+```
+src/features/aws-note/
+├── entities/          # ドメインエンティティ（型定義のみ）
+├── usecases/          # ビジネスロジックのオーケストレーション
+├── infrastructure/    # 外部API（Gemini、Notion）
+└── presentation/      # UI層（Next.js App Router）
+```
+
+**依存関係の原則:**
+- Entities → 依存なし
+- UseCases → Entities のみ
+- Infrastructure → Entities のみ
+- Presentation → UseCases + Entities
+
+## コーディング規約
+
+### TypeScript
+
+- `strict: true` を維持
+- `any` 型の使用は禁止（やむを得ない場合は `unknown` を使用）
+- インターフェースを型エイリアスより優先
+- すべての公開APIにJSDocコメントを記述
+
+### 命名規則
+
+- ファイル: kebab-case (`create-saa-note.ts`)
+- クラス: PascalCase (`GeminiClient`)
+- 関数・変数: camelCase (`createExamQuestionNote`)
+- 定数: UPPER_SNAKE_CASE (`GEMINI_API_KEY`)
+- 型・インターフェース: PascalCase (`ExamQuestionNote`)
+
+### インポート順序
+
+1. 外部ライブラリ
+2. 内部モジュール (`@/` エイリアス)
+3. 相対パス (`../`)
+
+### エラーハンドリング
+
+- 明示的なエラーメッセージ
+- `error instanceof Error` で型安全に処理
+- Zodスキーマでバリデーション
+
+## ファイル構造
+
+### Entities層
+
+- ドメインオブジェクトの型定義のみ
+- ビジネスロジックを含まない
+- 外部依存なし
+
+### UseCases層
+
+- ビジネスロジックのオーケストレーション
+- コンストラクタインジェクションで依存注入
+- テスト容易性を考慮
+
+### Infrastructure層
+
+- 外部APIとの通信
+- エラーハンドリングとリトライ
+- レスポンスの型変換
+
+### Presentation層
+
+- Next.js Server Actions
+- `'use client'` を明示
+- ビジネスロジックはUseCaseに委譲
+
+## コード生成時の注意事項
+
+1. **型安全性**: すべての関数・変数に型を明示
+2. **エラーハンドリング**: try-catch で適切に処理
+3. **コメント**: 複雑なロジックには説明を追加
+4. **命名**: 意図が明確な名前を使用
+5. **DRY原則**: 重複コードを避ける
+6. **単一責任**: 関数は1つの責任のみを持つ
+
+## 禁止事項
+
+- `any` 型の使用
+- 本番コードでの `console.log`
+- マジックナンバー
+- 深いネスト（3階層以上）
+- 長い関数（50行以上）
+
+## 環境変数
+
+- `.env.local` に保存（Git管理外）
+- 環境変数の検証は `getEnvVars()` で一元管理
+
+## テスト
+
+- ユニットテスト: `*.test.ts` または `*.spec.ts`
+- テストファイルは対象ファイルと同じディレクトリ
+
+## パフォーマンス
+
+- 不要な再レンダリングを避ける
+- API呼び出しのキャッシュを検討
+- 大きなデータはサーバーサイドで処理
+
+## セキュリティ
+
+- APIキーは環境変数で管理
+- ユーザー入力のバリデーション（Zod）
+- XSS対策（Reactの自動エスケープ）
+
