@@ -33,29 +33,32 @@ cp .env.example .env.local
 ```
 
 必要な環境変数：
+
 - `GEMINI_API_KEY`: Google AI Studio で取得したAPIキー
 - `NOTION_API_KEY`: Notion Integration で作成したAPIキー
 - `NOTION_DATABASE_ID`: NotionデータベースのID
+- `LOG_LEVEL` (オプション): ログレベル（DEBUG, INFO, WARN, ERROR）。デフォルト: INFO
 
 ### 3. Notionデータベースのセットアップ
 
 Notionで以下のプロパティを持つデータベースを作成してください：
 
-| プロパティ名 | 型 | 必須 |
-| --- | --- | --- |
-| **Question Text** | Title | ✓ |
-| **Choices** | Rich Text | ✓ |
-| **Correct Answer** | Number | ✓ |
-| **Correct Choice Text** | Rich Text | ✓ |
-| **Explanation** | Rich Text | ✓ |
-| **Related Services** | Multi-select | ✓ |
-| **Well-Architected Category** | Multi-select | ✓ |
-| **Choice Explanations** | Rich Text | ✓ |
-| **Architecture Diagram** | Rich Text | - |
-| **Learning Points** | Rich Text | ✓ |
-| **Similar Questions Hint** | Rich Text | - |
+| プロパティ名                  | 型           | 必須 |
+| ----------------------------- | ------------ | ---- |
+| **Question Text**             | Title        | ✓    |
+| **Choices**                   | Rich Text    | ✓    |
+| **Correct Answer**            | Number       | ✓    |
+| **Correct Choice Text**       | Rich Text    | ✓    |
+| **Explanation**               | Rich Text    | ✓    |
+| **Related Services**          | Multi-select | ✓    |
+| **Well-Architected Category** | Multi-select | ✓    |
+| **Choice Explanations**       | Rich Text    | ✓    |
+| **Architecture Diagram**      | Rich Text    | -    |
+| **Learning Points**           | Rich Text    | ✓    |
+| **Similar Questions Hint**    | Rich Text    | -    |
 
 **Multi-select のオプション:**
+
 - `cost-optimization`
 - `performance-efficiency`
 - `reliability`
@@ -64,19 +67,26 @@ Notionで以下のプロパティを持つデータベースを作成してく�
 - `sustainability`
 
 **Notion Integration の設定:**
+
 1. [Notion Integrations](https://www.notion.so/my-integrations) にアクセス
 2. 新しいIntegrationを作成
 3. 作成したデータベースにIntegrationを接続（右上の「...」→「接続」→ Integrationを選択）
 
 **注意: Architecture Diagram について**
+
 - Notion APIではCode型のプロパティを直接サポートしていないため、Rich Text型として保存されます
 - Mermaid図を表示するには、Notionページ内で手動でCodeブロックを作成し、言語を「mermaid」に設定してください
 - または、NotionのMermaid統合機能（利用可能な場合）を使用してください
 
 **問題入力のヒント**
+
 - 問題文は完全に入力してください（省略しない）
 - 選択肢は最低2つ、最大4つまで入力可能です
 - 空の選択肢は自動的に除外されます
+
+**トラブルシューティング**
+
+Notion APIエラーが発生した場合（例: "is not a property that exists"）は、[トラブルシューティングガイド](./docs/NOTION_SETUP_TROUBLESHOOTING.md) を参照してください。
 
 ### 4. 開発サーバーの起動
 
@@ -145,6 +155,18 @@ User Input → Server Action → UseCase → Gemini 3 Pro API
 - **Similar Questions Hint**: 類似問題を解く際のヒントを提供
 - **Architecture Diagrams**: 該当する場合、Mermaid.js形式のアーキテクチャ図を生成
 
+### 5. ロガー機能
+
+- **エラー追跡**: エラーの発生場所（ファイル名、行番号、関数名）を自動記録
+- **構造化ログ**: 開発環境では読みやすい形式、本番環境ではJSON形式
+- **ログレベル制御**: 環境変数 `LOG_LEVEL` で制御可能（DEBUG, INFO, WARN, ERROR）
+
+**ログの確認方法**:
+
+- **開発環境**: `npm run dev` を実行しているターミナルに出力されます
+- **本番環境**: デプロイ先のログストリーム（Vercel Dashboard、CloudWatch Logs など）で確認
+- 詳細は [docs/LOGGING.md](./docs/LOGGING.md) を参照してください
+
 ## 開発
 
 ### 型チェック
@@ -162,4 +184,3 @@ npm run lint
 ## ライセンス
 
 MIT
-

@@ -9,6 +9,7 @@ import type {
   ExamQuestionInput,
 } from "../entities/types";
 import { z } from "zod";
+import { logger } from "./logger";
 
 /**
  * Gemini 3 Pro のレスポンススキーマ検証
@@ -36,9 +37,9 @@ const GeminiResponseSchema = z.object({
       explanation: z.string(),
     })
   ),
-  architectureDiagram: z.string().optional(),
+  architectureDiagram: z.string().nullish(), // null と undefined の両方を許可
   learningPoints: z.array(z.string()),
-  similarQuestionsHint: z.string().optional(),
+  similarQuestionsHint: z.string().nullish(), // null と undefined の両方を許可
 });
 
 export class GeminiClient {
@@ -55,7 +56,7 @@ export class GeminiClient {
     // 現在利用可能なモデル: 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'
     // Gemini 3 Pro のモデル名が確定したら、ここを更新してください
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-1.5-pro", // Gemini 3 Pro リリース後は 'gemini-3-pro' などに変更
+      model: "gemini-2.0-flash", // Gemini 3 Pro リリース後は 'gemini-3-pro' などに変更
       generationConfig: {
         temperature: 0.7,
         topP: 0.95,
@@ -72,33 +73,105 @@ export class GeminiClient {
   async analyzeQuestion(
     questionInput: ExamQuestionInput
   ): Promise<GeminiQuestionAnalysis> {
+    logger.info("Starting question analysis", {
+      questionLength: questionInput.questionText.length,
+      choicesCount: questionInput.choices.length,
+    });
+
     const prompt = this.buildQuestionAnalysisPrompt(questionInput);
 
     try {
+      logger.debug("Sending request to Gemini API");
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+
+      logger.debug("Received response from Gemini API", {
+        responseLength: text.length,
+      });
 
       // JSON形式のレスポンスを抽出
       const jsonMatch =
         text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("Failed to extract JSON from Gemini response");
+        const error = new Error("Failed to extract JSON from Gemini response");
+        logger.error("Failed to extract JSON from response", error, {
+          responsePreview: text.substring(0, 200),
+        });
+        throw error;
       }
 
       const jsonText = jsonMatch[1] || jsonMatch[0];
-      const parsed = JSON.parse(jsonText);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(jsonText);
+        // null を undefined に変換（Zodスキーマと型定義の整合性のため）
+        if (parsed && typeof parsed === "object") {
+          const parsedObj = parsed as Record<string, unknown>;
+          if (parsedObj.architectureDiagram === null) {
+            parsedObj.architectureDiagram = undefined;
+          }
+          if (parsedObj.similarQuestionsHint === null) {
+            parsedObj.similarQuestionsHint = undefined;
+          }
+        }
+      } catch (parseError) {
+        const error = new Error("Failed to parse JSON response");
+        logger.error("JSON parsing failed", parseError as Error, {
+          jsonText: jsonText.substring(0, 200),
+        });
+        throw error;
+      }
 
       // スキーマ検証
-      const validated = GeminiResponseSchema.parse(parsed);
-      return validated;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        throw new Error(`Schema validation failed: ${error.message}`);
+      try {
+        const validated = GeminiResponseSchema.parse(parsed);
+
+        // null を undefined に変換（型定義との整合性のため）
+        const result: GeminiQuestionAnalysis = {
+          ...validated,
+          architectureDiagram:
+            validated.architectureDiagram === null
+              ? undefined
+              : validated.architectureDiagram,
+          similarQuestionsHint:
+            validated.similarQuestionsHint === null
+              ? undefined
+              : validated.similarQuestionsHint,
+        };
+
+        logger.info("Question analysis completed successfully", {
+          correctAnswer: result.correctAnswer,
+          relatedServicesCount: result.relatedServices.length,
+        });
+        return result;
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          const error = new Error(
+            `Schema validation failed: ${validationError.message}`
+          );
+          logger.error("Schema validation failed", error, {
+            zodErrors: validationError.errors,
+            parsedData: parsed,
+          });
+          throw error;
+        }
+        throw validationError;
       }
-      throw new Error(
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Schema validation")
+      ) {
+        throw error;
+      }
+      const apiError = new Error(
         `Gemini API error: ${error instanceof Error ? error.message : "Unknown error"}`
       );
+      logger.error("Gemini API request failed", error as Error, {
+        questionLength: questionInput.questionText.length,
+      });
+      throw apiError;
     }
   }
 

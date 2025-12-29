@@ -5,6 +5,7 @@
 
 import { GeminiClient } from "../infrastructure/gemini-client";
 import { NotionClient } from "../infrastructure/notion-client";
+import { logger } from "../infrastructure/logger";
 import type { ExamQuestionNote, ExamQuestionInput } from "../entities/types";
 
 /**
@@ -52,16 +53,41 @@ export class CreateSaaNoteUseCase {
     note: ExamQuestionNote;
     notionPageId: string;
   }> {
-    // 1. Gemini 3 Pro による高精度な問題分析
-    // 注意: キャッシュは将来的に実装（現時点では毎回API呼び出し）
-    const note = await getQuestionAnalysis(questionInput, this.geminiClient);
+    logger.info("CreateSaaNoteUseCase.execute started", {
+      questionTextLength: questionInput.questionText.length,
+      choicesCount: questionInput.choices.length,
+    });
 
-    // 2. Notionへの保存（既存の場合は更新）
-    const notionPageId = await this.notionClient.upsertQuestionNote(note);
+    try {
+      // 1. Gemini 3 Pro による高精度な問題分析
+      // 注意: キャッシュは将来的に実装（現時点では毎回API呼び出し）
+      logger.debug("Step 1: Analyzing question with Gemini");
+      const note = await getQuestionAnalysis(questionInput, this.geminiClient);
 
-    return {
-      note,
-      notionPageId,
-    };
+      logger.info("Question analysis completed", {
+        correctAnswer: note.correctAnswer,
+        relatedServicesCount: note.relatedServices.length,
+      });
+
+      // 2. Notionへの保存（既存の場合は更新）
+      logger.debug("Step 2: Saving to Notion");
+      const notionPageId = await this.notionClient.upsertQuestionNote(note);
+
+      logger.info("CreateSaaNoteUseCase.execute completed successfully", {
+        notionPageId,
+        correctAnswer: note.correctAnswer,
+      });
+
+      return {
+        note,
+        notionPageId,
+      };
+    } catch (error) {
+      logger.error("CreateSaaNoteUseCase.execute failed", error as Error, {
+        questionTextLength: questionInput.questionText.length,
+        choicesCount: questionInput.choices.length,
+      });
+      throw error;
+    }
   }
 }
