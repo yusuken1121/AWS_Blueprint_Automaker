@@ -156,7 +156,9 @@ export class NotionClient {
         rich_text: [{ text: { content: choicesText } }],
       },
       "Correct Answer": {
-        number: note.correctAnswer,
+        number: Array.isArray(note.correctAnswer)
+          ? note.correctAnswer[0]
+          : note.correctAnswer,
       },
       "Correct Choice Text": {
         rich_text: [{ text: { content: note.correctChoiceText } }],
@@ -400,7 +402,7 @@ export class NotionClient {
   private parseChoiceExplanations(
     text: string,
     choices: string[],
-    correctAnswer: number
+    correctAnswer: number | number[]
   ): ExamQuestionNote["choiceExplanations"] {
     const explanations: ExamQuestionNote["choiceExplanations"] = [];
     const sections = text.split(/【選択肢\d+】/).filter((s) => s.trim());
@@ -433,7 +435,9 @@ export class NotionClient {
       return choices.map((choice, index) => ({
         choiceNumber: index + 1,
         choiceText: choice,
-        isCorrect: index + 1 === correctAnswer,
+        isCorrect: Array.isArray(correctAnswer)
+          ? correctAnswer.includes(index + 1)
+          : index + 1 === correctAnswer,
         explanation: "",
       }));
     }

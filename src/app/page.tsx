@@ -14,6 +14,19 @@ import {
 } from "@/features/aws-note/infrastructure/mermaid-validator";
 import Link from "next/link";
 
+/**
+ * 選択肢が正解かどうかを判定するヘルパー関数
+ */
+function isCorrectAnswer(
+  choiceNumber: number,
+  correctAnswer: number | number[]
+): boolean {
+  if (Array.isArray(correctAnswer)) {
+    return correctAnswer.includes(choiceNumber);
+  }
+  return choiceNumber === correctAnswer;
+}
+
 export default function HomePage() {
   const [questionText, setQuestionText] = useState("");
   const [choices, setChoices] = useState<string[]>(["", "", "", ""]);
@@ -334,7 +347,7 @@ export default function HomePage() {
                       <div
                         key={index}
                         className={`p-3 rounded-lg border-2 ${
-                          index + 1 === result.note!.correctAnswer
+                          isCorrectAnswer(index + 1, result.note!.correctAnswer)
                             ? "border-green-500/50 bg-green-500/10"
                             : "border-border bg-muted"
                         }`}
@@ -342,7 +355,10 @@ export default function HomePage() {
                         <span className="font-medium text-foreground">
                           {index + 1}. {choice}
                         </span>
-                        {index + 1 === result.note!.correctAnswer && (
+                        {isCorrectAnswer(
+                          index + 1,
+                          result.note!.correctAnswer
+                        ) && (
                           <span className="ml-2 text-green-400 font-bold">
                             ✓ 正解
                           </span>

@@ -17,6 +17,19 @@ import {
 } from "@/features/aws-note/infrastructure/mermaid-validator";
 import Link from "next/link";
 
+/**
+ * 選択肢が正解かどうかを判定するヘルパー関数
+ */
+function isCorrectAnswer(
+  choiceNumber: number,
+  correctAnswer: number | number[]
+): boolean {
+  if (Array.isArray(correctAnswer)) {
+    return correctAnswer.includes(choiceNumber);
+  }
+  return choiceNumber === correctAnswer;
+}
+
 export default function PracticePage() {
   const [allQuestions, setAllQuestions] = useState<ExamQuestionNote[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<
@@ -377,7 +390,9 @@ export default function PracticePage() {
     );
   }
 
-  const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+  const isCorrect =
+    selectedAnswer !== null &&
+    isCorrectAnswer(selectedAnswer, currentQuestion.correctAnswer);
   const mermaidData = currentQuestion.explanation
     ? extractMermaidFromExplanation(currentQuestion.explanation)
     : null;
@@ -494,8 +509,10 @@ export default function PracticePage() {
               {currentQuestion.choices.map((choice, index) => {
                 const choiceNumber = index + 1;
                 const isSelected = selectedAnswer === choiceNumber;
-                const isCorrectChoice =
-                  choiceNumber === currentQuestion.correctAnswer;
+                const isCorrectChoice = isCorrectAnswer(
+                  choiceNumber,
+                  currentQuestion.correctAnswer
+                );
                 let borderColor = "border-border";
                 let bgColor = "bg-muted";
 

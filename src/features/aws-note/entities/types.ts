@@ -34,8 +34,8 @@ export interface ExamQuestionNote {
   /** 選択肢 */
   choices: string[];
 
-  /** 正解の選択肢番号（1-indexed） */
-  correctAnswer: number;
+  /** 正解の選択肢番号（1-indexed）。単一の場合は数値、複数の場合は配列 */
+  correctAnswer: number | number[];
 
   /** 正解の選択肢テキスト */
   correctChoiceText: string;
@@ -71,7 +71,8 @@ export interface ExamQuestionNote {
  * Gemini 3 Pro からのレスポンス構造
  */
 export interface GeminiQuestionAnalysis {
-  correctAnswer: number;
+  /** 正解の選択肢番号（1-indexed）。単一の場合は数値、複数の場合は配列 */
+  correctAnswer: number | number[];
   correctChoiceText: string;
   explanation: string;
   relatedServices: string[];
