@@ -20,7 +20,7 @@ export type WellArchitectedPillar =
 export interface ExamQuestionInput {
   /** 問題文 */
   questionText: string;
-  /** 選択肢（通常は4つ） */
+  /** 選択肢（2つ以上8つ以下） */
   choices: string[];
 }
 

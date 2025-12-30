@@ -16,7 +16,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   const [questionText, setQuestionText] = useState("");
-  const [choices, setChoices] = useState(["", "", "", ""]);
+  const [choices, setChoices] = useState<string[]>(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     note?: ExamQuestionNote;
@@ -159,6 +159,19 @@ export default function HomePage() {
     setChoices(newChoices);
   };
 
+  const handleAddChoice = () => {
+    if (choices.length < 8) {
+      setChoices([...choices, ""]);
+    }
+  };
+
+  const handleRemoveChoice = (index: number) => {
+    if (choices.length > 2) {
+      const newChoices = choices.filter((_, i) => i !== index);
+      setChoices(newChoices);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!questionText.trim()) return;
@@ -236,20 +249,47 @@ export default function HomePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                選択肢（最低2つ、最大4つ）
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-foreground">
+                  選択肢（最低2つ、最大8つ）
+                </label>
+                <div className="flex gap-2">
+                  {choices.length < 8 && (
+                    <button
+                      type="button"
+                      onClick={handleAddChoice}
+                      disabled={loading}
+                      className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      + 追加
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="space-y-2">
                 {choices.map((choice, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    value={choice}
-                    onChange={(e) => handleChoiceChange(index, e.target.value)}
-                    placeholder={`選択肢 ${index + 1}`}
-                    className="w-full px-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground placeholder:text-muted-foreground"
-                    disabled={loading}
-                  />
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={choice}
+                      onChange={(e) =>
+                        handleChoiceChange(index, e.target.value)
+                      }
+                      placeholder={`選択肢 ${index + 1}`}
+                      className="flex-1 px-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground placeholder:text-muted-foreground"
+                      disabled={loading}
+                    />
+                    {choices.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveChoice(index)}
+                        disabled={loading}
+                        className="px-3 py-2 text-sm bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        削除
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -259,7 +299,8 @@ export default function HomePage() {
               disabled={
                 loading ||
                 !questionText.trim() ||
-                choices.filter((c) => c.trim()).length < 2
+                choices.filter((c) => c.trim()).length < 2 ||
+                choices.filter((c) => c.trim()).length > 8
               }
               className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
             >

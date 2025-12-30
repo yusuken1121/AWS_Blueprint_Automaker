@@ -13,12 +13,16 @@ import type {
 } from "../entities/types";
 import { z } from "zod";
 import { logger } from "./logger";
+import { GEMINI_API_MODEL } from "@/constants/gemini-model";
 
 /**
  * Gemini 3 Pro のレスポンススキーマ検証
  */
 const GeminiResponseSchema = z.object({
-  correctAnswer: z.number().int().min(1).max(4),
+  correctAnswer: z.union([
+    z.number().int().min(1).max(8),
+    z.array(z.number().int().min(1).max(8)),
+  ]),
   correctChoiceText: z.string(),
   explanation: z.string(),
   relatedServices: z.array(z.string()),
@@ -34,7 +38,7 @@ const GeminiResponseSchema = z.object({
   ),
   choiceExplanations: z.array(
     z.object({
-      choiceNumber: z.number().int().min(1).max(4),
+      choiceNumber: z.number().int().min(1).max(8),
       choiceText: z.string(),
       isCorrect: z.boolean(),
       explanation: z.string(),
@@ -56,7 +60,7 @@ export class GeminiClient {
     this.genAI = new GoogleGenerativeAI(apiKey);
 
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
+      model: GEMINI_API_MODEL,
       generationConfig: {
         temperature: 0.5, // 創造性を抑えてフォーマット遵守を優先
         topP: 0.95,
@@ -99,8 +103,19 @@ export class GeminiClient {
       try {
         parsed = JSON.parse(jsonText);
 
+        // 配列が返された場合は最初の要素を取得
+        if (Array.isArray(parsed)) {
+          if (parsed.length === 0) {
+            throw new Error("Gemini API returned an empty array");
+          }
+          logger.warn("Gemini API returned an array, using first element", {
+            arrayLength: parsed.length,
+          });
+          parsed = parsed[0];
+        }
+
         // データのクリーンアップと正規化
-        if (parsed && typeof parsed === "object") {
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
           const obj = parsed as Record<string, unknown>;
 
           // null プロパティを undefined に変換
@@ -200,7 +215,7 @@ ${choicesText}
 **最優先事項: 初心者が「なるほど、イメージできた！」と思えるような、噛み砕いた平易な表現を徹底してください。**
 
 {
-  "correctAnswer": integer,
+  "correctAnswer": integer | integer[], // **重要: 正解が1つの場合は数値（例: 2）、複数の場合は配列（例: [2, 4]）で出力してください**
   "correctChoiceText": string,
   "explanation": string, // **重要: 500文字以内で、なぜそれが正解なのかを「日常の例え話」を交えて解説してください。難しいAWS用語は避けるか、カッコ書きで補足してください。**
   "relatedServices": string[],
