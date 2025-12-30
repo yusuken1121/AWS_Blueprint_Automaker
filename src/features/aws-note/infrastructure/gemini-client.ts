@@ -1,6 +1,5 @@
 /**
  * Gemini 3 Pro API クライアント
- * 統合修正版:
  * 1. JSONモードによる安定化
  * 2. Mermaid構文エラー回避（ノードテキストの引用符強制）
  * 3. カテゴリの表記ゆれ吸収
@@ -188,8 +187,8 @@ export class GeminiClient {
       .map((choice, index) => `${index + 1}. ${choice}`)
       .join("\n");
 
-    return `あなたはAWS Certified Solutions Architect (SAA) 試験のエキスパートです。
-以下の問題に対する解説を作成してください。
+    return `あなたは、AWSをほとんど触ったことがない初心者にも、直感的に技術を理解させるのが得意な「親切なAWSメンター」です。
+以下のSAA試験問題について、専門用語をできるだけ使わず、日常の事象（例：コンビニ、図書館、宅配便、家の鍵など）に例えて、直感的にわかる解説を作成してください。
 
 【問題文】
 ${questionInput.questionText}
@@ -198,12 +197,12 @@ ${questionInput.questionText}
 ${choicesText}
 
 以下のJSONスキーマに従って出力してください。
-**重要: 出力が途切れるのを防ぐため、解説は要点を絞って簡潔に記述してください。**
+**最優先事項: 初心者が「なるほど、イメージできた！」と思えるような、噛み砕いた平易な表現を徹底してください。**
 
 {
   "correctAnswer": integer,
   "correctChoiceText": string,
-  "explanation": string, // **重要: 500文字以内で、正解の理由と重要な概念のみを簡潔に説明してください。ここには図解を含めず、テキストのみを記述してください。**
+  "explanation": string, // **重要: 500文字以内で、なぜそれが正解なのかを「日常の例え話」を交えて解説してください。難しいAWS用語は避けるか、カッコ書きで補足してください。**
   "relatedServices": string[],
   "wellArchitectedCategories": string[], // "cost-optimization", "performance-efficiency" 等
   "choiceExplanations": [
@@ -211,11 +210,11 @@ ${choicesText}
       "choiceNumber": integer,
       "choiceText": string,
       "isCorrect": boolean,
-      "explanation": string // **重要: 各選択肢につき1-2文で簡潔に記述してください。**
+      "explanation": string // **重要: 「機能が違うから」等の機械的な説明ではなく、「それを選ぶと、現場でどんな困ったことが起きるか」を初心者にわかる言葉で説明してください。**
     }
   ],
-  "architectureDiagram": string, // **重要: Mermaid.js形式の図解コード (graph TD/LR)。構文エラーを防ぐため、ノード内のテキストは必ず二重引用符で囲んでください。例: A["EC2 (gp3)"] --> B["RDS"]**
-  "learningPoints": string[], // 3つまで
+  "architectureDiagram": string, // **重要: Mermaid.js形式の図解コード (graph TD/LR)。システム構成図であり、「どうデータが流れるか」や「誰が何をするか」がわかる概念図にしてください。構文エラーを防ぐため、ノード内のテキストは必ず二重引用符で囲んでください。AWSのサービスは必ず英語で書いてください。例: A["User"] --> B["Amazon S3 (倉庫)"]**
+  "learningPoints": string[], // 初心者が持ち帰るべき3つのポイント（専門用語ではなく、簡単な言葉で）
   "similarQuestionsHint": string
 }`;
   }
