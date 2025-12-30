@@ -77,14 +77,6 @@ export default function HomePage() {
           .then(({ svg }) => {
             if (mermaidRef.current) {
               mermaidRef.current.innerHTML = svg;
-              // 警告がある場合は表示
-              if (validation.warnings && validation.warnings.length > 0) {
-                const warningDiv = document.createElement("div");
-                warningDiv.className =
-                  "text-yellow-600 text-xs mt-2 p-2 bg-yellow-50 rounded";
-                warningDiv.textContent = `⚠️ 図解を自動修正しました: ${validation.warnings.join(", ")}`;
-                mermaidRef.current.appendChild(warningDiv);
-              }
             }
           })
           .catch((error) => {
@@ -136,14 +128,6 @@ export default function HomePage() {
         .then(({ svg }) => {
           if (architectureDiagramRef.current) {
             architectureDiagramRef.current.innerHTML = svg;
-            // 警告がある場合は表示
-            if (validation.warnings && validation.warnings.length > 0) {
-              const warningDiv = document.createElement("div");
-              warningDiv.className =
-                "text-yellow-600 text-xs mt-2 p-2 bg-yellow-50 rounded";
-              warningDiv.textContent = `⚠️ 図解を自動修正しました: ${validation.warnings.join(", ")}`;
-              architectureDiagramRef.current.appendChild(warningDiv);
-            }
           }
         })
         .catch((error) => {
@@ -214,7 +198,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/practice"
-            className="inline-block px-6 py-3 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 font-medium transition"
+            className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium transition"
           >
             📚 問題練習ページへ
           </Link>
@@ -381,18 +365,6 @@ export default function HomePage() {
                           </>
                         );
                       }
-                      // Mermaid図がない場合（フォールバック）
-                      return (
-                        <>
-                          <p className="whitespace-pre-wrap text-foreground">
-                            {result.note.explanation}
-                          </p>
-                          <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded text-sm text-yellow-400">
-                            ⚠️
-                            図解が含まれていません。次回の生成時に図解が含まれるように改善します。
-                          </div>
-                        </>
-                      );
                     })()}
                   </div>
                 </section>

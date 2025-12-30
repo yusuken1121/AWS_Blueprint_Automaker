@@ -6,7 +6,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getAllQuestions } from "../actions";
-import type { ExamQuestionNote } from "@/features/aws-note/entities/types";
+import type {
+  ExamQuestionNote,
+  WellArchitectedPillar,
+} from "@/features/aws-note/entities/types";
 import mermaid from "mermaid";
 import {
   validateAndFixMermaid,
@@ -25,7 +28,9 @@ export default function PracticePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<
+    WellArchitectedPillar[]
+  >([]);
   const [showFilters, setShowFilters] = useState(false);
   const mermaidRef = useRef<HTMLDivElement>(null);
   const architectureDiagramRef = useRef<HTMLDivElement>(null);
@@ -272,7 +277,7 @@ export default function PracticePage() {
     );
   };
 
-  const handleCategoryToggle = (category: string) => {
+  const handleCategoryToggle = (category: WellArchitectedPillar) => {
     setSelectedCategories((prev) =>
       prev.includes(category)
         ? prev.filter((c) => c !== category)
@@ -408,9 +413,9 @@ export default function PracticePage() {
             <div className="flex justify-between items-center mb-3">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition"
               >
-                <span className="text-secondary-foreground">🔍 フィルター</span>
+                <span>🔍 フィルター</span>
                 {(selectedServices.length > 0 ||
                   selectedCategories.length > 0) && (
                   <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
@@ -443,7 +448,7 @@ export default function PracticePage() {
                         onClick={() => handleServiceToggle(service)}
                         className={`px-3 py-1 rounded-full text-sm transition ${
                           selectedServices.includes(service)
-                            ? "bg-accent text-accent-foreground"
+                            ? "bg-primary text-primary-foreground"
                             : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                         }`}
                       >
@@ -700,7 +705,7 @@ export default function PracticePage() {
             </button>
             <button
               onClick={handleRandomQuestion}
-              className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
             >
               🎲 ランダム
             </button>

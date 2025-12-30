@@ -14,8 +14,8 @@
     --popover: 0 0% 3%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 0 0% 98%; /* White accent */
-    --primary-foreground: 0 0% 9%; /* Black text on white */
+    --primary: 142 71% 45%; /* Light Green */
+    --primary-foreground: 0 0% 9%; /* Black text on green */
 
     --secondary: 0 0% 10%; /* Dark Gray */
     --secondary-foreground: 0 0% 98%;
@@ -31,7 +31,7 @@
 
     --border: 0 0% 12%; /* Subtle dark border */
     --input: 0 0% 12%;
-    --ring: 0 0% 98%;
+    --ring: 142 71% 45%; /* Light Green ring */
 
     --radius: 0.5rem;
   }
@@ -44,8 +44,8 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 142 71% 45%; /* Light Green */
+    --primary-foreground: 0 0% 9%; /* Black text on green */
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 10%;
@@ -56,7 +56,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 12%;
     --input: 0 0% 12%;
-    --ring: 0 0% 98%;
+    --ring: 142 71% 45%; /* Light Green ring */
   }
 }
 
