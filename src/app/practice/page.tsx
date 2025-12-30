@@ -171,10 +171,10 @@ export default function PracticePage() {
               const textDiagram = mermaidToTextDiagram(codeToRender);
               mermaidRef.current.innerHTML = `
                 <div class="space-y-2">
-                  <div class="text-red-600 p-2 bg-red-50 rounded text-sm">
+                  <div class="text-destructive p-2 bg-destructive/10 rounded text-sm">
                     ⚠️ Mermaid図のレンダリングエラー
                   </div>
-                  <div class="text-slate-600 text-xs p-2 bg-slate-50 rounded font-mono whitespace-pre-wrap">
+                  <div class="text-muted-foreground text-xs p-2 bg-muted rounded font-mono whitespace-pre-wrap">
                     ${textDiagram}
                   </div>
                 </div>
@@ -214,10 +214,10 @@ export default function PracticePage() {
             const textDiagram = mermaidToTextDiagram(codeToRender);
             architectureDiagramRef.current.innerHTML = `
               <div class="space-y-2">
-                <div class="text-red-600 p-2 bg-red-50 rounded text-sm">
+                <div class="text-destructive p-2 bg-destructive/10 rounded text-sm">
                   ⚠️ Mermaid図のレンダリングエラー
                 </div>
-                <div class="text-slate-600 text-xs p-2 bg-slate-50 rounded font-mono whitespace-pre-wrap">
+                <div class="text-muted-foreground text-xs p-2 bg-muted rounded font-mono whitespace-pre-wrap">
                   ${textDiagram}
                 </div>
               </div>
@@ -287,10 +287,10 @@ export default function PracticePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="text-slate-600">問題を読み込み中...</div>
+          <div className="bg-card rounded-lg border border-border p-8 text-center">
+            <div className="text-muted-foreground">問題を読み込み中...</div>
           </div>
         </div>
       </div>
@@ -299,14 +299,14 @@ export default function PracticePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="text-red-600 mb-4">
+          <div className="bg-card rounded-lg border border-border p-8">
+            <div className="text-destructive mb-4">
               <h2 className="font-bold text-lg mb-2">エラー</h2>
               <p>{error}</p>
             </div>
-            <Link href="/" className="text-blue-600 hover:underline">
+            <Link href="/" className="text-primary hover:underline">
               ← ホームに戻る
             </Link>
           </div>
@@ -317,13 +317,13 @@ export default function PracticePage() {
 
   if (allQuestions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="text-slate-600 mb-4">
+          <div className="bg-card rounded-lg border border-border p-8 text-center">
+            <div className="text-muted-foreground mb-4">
               問題が見つかりませんでした。
             </div>
-            <Link href="/" className="text-blue-600 hover:underline">
+            <Link href="/" className="text-primary hover:underline">
               ← ホームに戻る
             </Link>
           </div>
@@ -334,21 +334,21 @@ export default function PracticePage() {
 
   if (filteredQuestions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="text-slate-600 mb-4">
+          <div className="bg-card rounded-lg border border-border p-8">
+            <div className="text-muted-foreground mb-4">
               <h2 className="font-bold text-lg mb-2">フィルター結果</h2>
               <p>選択した条件に一致する問題が見つかりませんでした。</p>
             </div>
             <button
               onClick={handleClearFilters}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
             >
               フィルターをクリア
             </button>
             <div className="mt-4">
-              <Link href="/" className="text-blue-600 hover:underline">
+              <Link href="/" className="text-primary hover:underline">
                 ← ホームに戻る
               </Link>
             </div>
@@ -360,10 +360,12 @@ export default function PracticePage() {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="text-slate-600 mb-4">問題を読み込み中...</div>
+          <div className="bg-card rounded-lg border border-border p-8 text-center">
+            <div className="text-muted-foreground mb-4">
+              問題を読み込み中...
+            </div>
           </div>
         </div>
       </div>
@@ -376,18 +378,18 @@ export default function PracticePage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              <h1 className="text-3xl font-bold text-foreground mb-2">
                 AWS SAA 問題練習
               </h1>
-              <p className="text-slate-600">
+              <p className="text-muted-foreground">
                 問題 {currentQuestionIndex + 1} / {filteredQuestions.length}
                 {filteredQuestions.length !== allQuestions.length && (
-                  <span className="text-slate-400 ml-2">
+                  <span className="text-muted-foreground/60 ml-2">
                     (全 {allQuestions.length} 問中)
                   </span>
                 )}
@@ -395,23 +397,23 @@ export default function PracticePage() {
             </div>
             <Link
               href="/"
-              className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+              className="px-4 py-2 text-primary hover:bg-accent rounded-lg transition"
             >
               ← ホーム
             </Link>
           </div>
 
           {/* フィルターセクション */}
-          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="bg-card rounded-lg border border-border p-4 mb-6">
             <div className="flex justify-between items-center mb-3">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition"
               >
-                <span>🔍 フィルター</span>
+                <span className="text-secondary-foreground">🔍 フィルター</span>
                 {(selectedServices.length > 0 ||
                   selectedCategories.length > 0) && (
-                  <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                  <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
                     {selectedServices.length + selectedCategories.length}
                   </span>
                 )}
@@ -420,7 +422,7 @@ export default function PracticePage() {
                 selectedCategories.length > 0) && (
                 <button
                   onClick={handleClearFilters}
-                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition"
+                  className="px-3 py-1 text-sm text-destructive hover:bg-destructive/10 rounded transition"
                 >
                   クリア
                 </button>
@@ -428,10 +430,10 @@ export default function PracticePage() {
             </div>
 
             {showFilters && (
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 pt-4 border-t border-border">
                 {/* 関連サービスフィルター */}
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                  <h3 className="text-sm font-semibold text-foreground mb-2">
                     関連サービス
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -441,8 +443,8 @@ export default function PracticePage() {
                         onClick={() => handleServiceToggle(service)}
                         className={`px-3 py-1 rounded-full text-sm transition ${
                           selectedServices.includes(service)
-                            ? "bg-purple-600 text-white"
-                            : "bg-purple-100 text-purple-800 hover:bg-purple-200"
+                            ? "bg-accent text-accent-foreground"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                         }`}
                       >
                         {service}
@@ -453,7 +455,7 @@ export default function PracticePage() {
 
                 {/* Well-Architected Frameworkフィルター */}
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                  <h3 className="text-sm font-semibold text-foreground mb-2">
                     Well-Architected Framework
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -463,8 +465,8 @@ export default function PracticePage() {
                         onClick={() => handleCategoryToggle(category)}
                         className={`px-3 py-1 rounded-full text-sm transition ${
                           selectedCategories.includes(category)
-                            ? "bg-blue-600 text-white"
-                            : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                         }`}
                       >
                         {category}
@@ -477,9 +479,9 @@ export default function PracticePage() {
           </div>
         </header>
 
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border p-6 mb-6">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">
+            <h2 className="text-xl font-bold text-foreground mb-4">
               {currentQuestion.questionText}
             </h2>
 
@@ -489,20 +491,20 @@ export default function PracticePage() {
                 const isSelected = selectedAnswer === choiceNumber;
                 const isCorrectChoice =
                   choiceNumber === currentQuestion.correctAnswer;
-                let borderColor = "border-slate-200";
-                let bgColor = "bg-slate-50";
+                let borderColor = "border-border";
+                let bgColor = "bg-muted";
 
                 if (showExplanation) {
                   if (isCorrectChoice) {
-                    borderColor = "border-green-500";
-                    bgColor = "bg-green-50";
+                    borderColor = "border-green-500/50";
+                    bgColor = "bg-green-500/10";
                   } else if (isSelected && !isCorrectChoice) {
-                    borderColor = "border-red-500";
-                    bgColor = "bg-red-50";
+                    borderColor = "border-destructive/50";
+                    bgColor = "bg-destructive/10";
                   }
                 } else if (isSelected) {
-                  borderColor = "border-blue-500";
-                  bgColor = "bg-blue-50";
+                  borderColor = "border-primary";
+                  bgColor = "bg-primary/10";
                 }
 
                 return (
@@ -510,10 +512,10 @@ export default function PracticePage() {
                     key={index}
                     onClick={() => handleAnswerSelect(choiceNumber)}
                     disabled={showExplanation}
-                    className={`w-full text-left p-4 rounded-lg border-2 ${borderColor} ${bgColor} transition ${
+                    className={`w-full text-left p-4 rounded-lg border-2 ${borderColor} ${bgColor} transition text-foreground ${
                       showExplanation
                         ? "cursor-default"
-                        : "hover:border-blue-400 cursor-pointer"
+                        : "hover:border-primary/50 cursor-pointer"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -521,10 +523,12 @@ export default function PracticePage() {
                         {choiceNumber}. {choice}
                       </span>
                       {showExplanation && isCorrectChoice && (
-                        <span className="text-green-600 font-bold">✓ 正解</span>
+                        <span className="text-green-400 font-bold">✓ 正解</span>
                       )}
                       {showExplanation && isSelected && !isCorrectChoice && (
-                        <span className="text-red-600 font-bold">✗ 不正解</span>
+                        <span className="text-destructive font-bold">
+                          ✗ 不正解
+                        </span>
                       )}
                     </div>
                   </button>
@@ -537,7 +541,7 @@ export default function PracticePage() {
             <div className="mt-6 flex gap-4">
               <button
                 onClick={handleShowExplanation}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium"
               >
                 解説を表示
               </button>
@@ -545,34 +549,34 @@ export default function PracticePage() {
           )}
 
           {showExplanation && (
-            <div className="mt-6 space-y-6 border-t pt-6">
+            <div className="mt-6 space-y-6 border-t border-border pt-6">
               <div>
-                <h3 className="font-bold text-lg mb-3 text-slate-800">解説</h3>
-                <div className="bg-slate-50 p-4 rounded-lg space-y-4">
+                <h3 className="font-bold text-lg mb-3 text-foreground">解説</h3>
+                <div className="bg-muted p-4 rounded-lg space-y-4">
                   {mermaidData && mermaidData.mermaidCode ? (
                     <>
                       {mermaidData.textBefore && (
-                        <p className="whitespace-pre-wrap text-slate-700">
+                        <p className="whitespace-pre-wrap text-foreground">
                           {mermaidData.textBefore}
                         </p>
                       )}
                       <div className="my-4">
-                        <h4 className="text-sm font-semibold text-slate-600 mb-2">
+                        <h4 className="text-sm font-semibold text-muted-foreground mb-2">
                           図解
                         </h4>
                         <div
                           ref={mermaidRef}
-                          className="flex justify-center items-center bg-white p-4 rounded border overflow-x-auto"
+                          className="flex justify-center items-center bg-card p-4 rounded border border-border overflow-x-auto"
                         />
                       </div>
                       {mermaidData.textAfter && (
-                        <p className="whitespace-pre-wrap text-slate-700">
+                        <p className="whitespace-pre-wrap text-foreground">
                           {mermaidData.textAfter}
                         </p>
                       )}
                     </>
                   ) : (
-                    <p className="whitespace-pre-wrap text-slate-700">
+                    <p className="whitespace-pre-wrap text-foreground">
                       {currentQuestion.explanation}
                     </p>
                   )}
@@ -581,7 +585,7 @@ export default function PracticePage() {
 
               {currentQuestion.choiceExplanations.length > 0 && (
                 <div>
-                  <h3 className="font-bold text-lg mb-3 text-slate-800">
+                  <h3 className="font-bold text-lg mb-3 text-foreground">
                     各選択肢の解説
                   </h3>
                   <div className="space-y-3">
@@ -590,21 +594,25 @@ export default function PracticePage() {
                         key={ce.choiceNumber}
                         className={`p-4 rounded-lg border-2 ${
                           ce.isCorrect
-                            ? "border-green-500 bg-green-50"
-                            : "border-red-200 bg-red-50"
+                            ? "border-green-500/50 bg-green-500/10"
+                            : "border-destructive/50 bg-destructive/10"
                         }`}
                       >
-                        <div className="font-semibold mb-2">
+                        <div className="font-semibold mb-2 text-foreground">
                           選択肢{ce.choiceNumber}: {ce.choiceText}
                           <span
                             className={`ml-2 ${
-                              ce.isCorrect ? "text-green-600" : "text-red-600"
+                              ce.isCorrect
+                                ? "text-green-400"
+                                : "text-destructive"
                             }`}
                           >
                             {ce.isCorrect ? "✓ 正解" : "✗ 不正解"}
                           </span>
                         </div>
-                        <p className="text-slate-700">{ce.explanation}</p>
+                        <p className="text-muted-foreground">
+                          {ce.explanation}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -613,12 +621,12 @@ export default function PracticePage() {
 
               {currentQuestion.learningPoints.length > 0 && (
                 <div>
-                  <h3 className="font-bold text-lg mb-3 text-slate-800">
+                  <h3 className="font-bold text-lg mb-3 text-foreground">
                     学習ポイント
                   </h3>
-                  <ul className="list-disc list-inside space-y-1 bg-slate-50 p-4 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-lg">
                     {currentQuestion.learningPoints.map((point, index) => (
-                      <li key={index} className="text-slate-700">
+                      <li key={index} className="text-foreground">
                         {point}
                       </li>
                     ))}
@@ -628,13 +636,13 @@ export default function PracticePage() {
 
               {currentQuestion.architectureDiagram && (
                 <div>
-                  <h3 className="font-bold text-lg mb-2 text-slate-800">
+                  <h3 className="font-bold text-lg mb-2 text-foreground">
                     Architecture Diagram
                   </h3>
-                  <div className="bg-slate-50 p-4 rounded-lg overflow-x-auto">
+                  <div className="bg-muted p-4 rounded-lg overflow-x-auto">
                     <div
                       ref={architectureDiagramRef}
-                      className="flex justify-center items-center bg-white p-4 rounded border"
+                      className="flex justify-center items-center bg-card p-4 rounded border border-border"
                     />
                   </div>
                 </div>
@@ -642,14 +650,14 @@ export default function PracticePage() {
 
               {currentQuestion.relatedServices.length > 0 && (
                 <div>
-                  <h3 className="font-bold text-lg mb-2 text-slate-800">
+                  <h3 className="font-bold text-lg mb-2 text-foreground">
                     関連サービス
                   </h3>
                   <div className="flex gap-2 flex-wrap">
                     {currentQuestion.relatedServices.map((service) => (
                       <span
                         key={service}
-                        className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                        className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
                       >
                         {service}
                       </span>
@@ -660,7 +668,7 @@ export default function PracticePage() {
 
               {currentQuestion.wellArchitectedCategories.length > 0 && (
                 <div>
-                  <h3 className="font-bold text-lg mb-2 text-slate-800">
+                  <h3 className="font-bold text-lg mb-2 text-foreground">
                     Well-Architected Framework
                   </h3>
                   <div className="flex gap-2 flex-wrap">
@@ -668,7 +676,7 @@ export default function PracticePage() {
                       (category) => (
                         <span
                           key={category}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm"
                         >
                           {category}
                         </span>
@@ -681,25 +689,25 @@ export default function PracticePage() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-card rounded-lg border border-border p-6">
           <div className="flex gap-4 justify-between">
             <button
               onClick={handlePreviousQuestion}
               disabled={currentQuestionIndex === 0}
-              className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ← 前の問題
             </button>
             <button
               onClick={handleRandomQuestion}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80"
             >
               🎲 ランダム
             </button>
             <button
               onClick={handleNextQuestion}
               disabled={currentQuestionIndex === questions.length - 1}
-              className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               次の問題 →
             </button>

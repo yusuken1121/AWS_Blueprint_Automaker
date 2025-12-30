@@ -94,10 +94,10 @@ export default function HomePage() {
               const textDiagram = mermaidToTextDiagram(codeToRender);
               mermaidRef.current.innerHTML = `
                 <div class="space-y-2">
-                  <div class="text-red-600 p-2 bg-red-50 rounded text-sm">
+                  <div class="text-destructive p-2 bg-destructive/10 rounded text-sm">
                     ⚠️ Mermaid図のレンダリングエラー: ${error instanceof Error ? error.message : "Unknown error"}
                   </div>
-                  <div class="text-slate-600 text-xs p-2 bg-slate-50 rounded font-mono whitespace-pre-wrap">
+                  <div class="text-muted-foreground text-xs p-2 bg-muted rounded font-mono whitespace-pre-wrap">
                     ${textDiagram}
                   </div>
                 </div>
@@ -153,10 +153,10 @@ export default function HomePage() {
             const textDiagram = mermaidToTextDiagram(codeToRender);
             architectureDiagramRef.current.innerHTML = `
               <div class="space-y-2">
-                <div class="text-red-600 p-2 bg-red-50 rounded text-sm">
+                <div class="text-destructive p-2 bg-destructive/10 rounded text-sm">
                   ⚠️ Mermaid図のレンダリングエラー: ${error instanceof Error ? error.message : "Unknown error"}
                 </div>
-                <div class="text-slate-600 text-xs p-2 bg-slate-50 rounded font-mono whitespace-pre-wrap">
+                <div class="text-muted-foreground text-xs p-2 bg-muted rounded font-mono whitespace-pre-wrap">
                   ${textDiagram}
                 </div>
               </div>
@@ -202,19 +202,19 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
         <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             AWS SAA 学習効率最大化システム
           </h1>
-          <p className="text-slate-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Gemini 3 Pro
             による深い推論とNotion連携で、試験問題の理解を最短距離で習得
           </p>
           <Link
             href="/practice"
-            className="inline-block px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition"
+            className="inline-block px-6 py-3 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 font-medium transition"
           >
             📚 問題練習ページへ
           </Link>
@@ -222,13 +222,13 @@ export default function HomePage() {
 
         <form
           onSubmit={handleSubmit}
-          className="mb-8 bg-white rounded-lg shadow-lg p-6"
+          className="mb-8 bg-card rounded-lg border border-border p-6"
         >
           <div className="space-y-4">
             <div>
               <label
                 htmlFor="question"
-                className="block text-sm font-medium text-slate-700 mb-2"
+                className="block text-sm font-medium text-foreground mb-2"
               >
                 問題文
               </label>
@@ -238,13 +238,13 @@ export default function HomePage() {
                 onChange={(e) => setQuestionText(e.target.value)}
                 placeholder="AWS SAA試験の問題文を入力してください"
                 rows={4}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y text-foreground placeholder:text-muted-foreground"
                 disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 選択肢（最低2つ、最大4つ）
               </label>
               <div className="space-y-2">
@@ -255,7 +255,7 @@ export default function HomePage() {
                     value={choice}
                     onChange={(e) => handleChoiceChange(index, e.target.value)}
                     placeholder={`選択肢 ${index + 1}`}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground placeholder:text-muted-foreground"
                     disabled={loading}
                   />
                 ))}
@@ -269,7 +269,7 @@ export default function HomePage() {
                 !questionText.trim() ||
                 choices.filter((c) => c.trim()).length < 2
               }
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
             >
               {loading ? "解説生成中..." : "解説を生成"}
             </button>
@@ -277,23 +277,23 @@ export default function HomePage() {
         </form>
 
         {result && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-card rounded-lg border border-border p-6">
             {result.error ? (
-              <div className="text-red-600">
+              <div className="text-destructive">
                 <h2 className="font-bold text-lg mb-2">エラー</h2>
                 <p>{result.error}</p>
               </div>
             ) : result.note ? (
               <div className="space-y-6">
-                <div className="border-b pb-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-3">
+                <div className="border-b border-border pb-4">
+                  <h2 className="text-xl font-bold text-foreground mb-3">
                     問題文
                   </h2>
-                  <p className="text-slate-700 mb-4">
+                  <p className="text-muted-foreground mb-4">
                     {result.note.questionText}
                   </p>
 
-                  <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
                     選択肢
                   </h3>
                   <div className="space-y-2 mb-4">
@@ -302,15 +302,15 @@ export default function HomePage() {
                         key={index}
                         className={`p-3 rounded-lg border-2 ${
                           index + 1 === result.note!.correctAnswer
-                            ? "border-green-500 bg-green-50"
-                            : "border-slate-200 bg-slate-50"
+                            ? "border-green-500/50 bg-green-500/10"
+                            : "border-border bg-muted"
                         }`}
                       >
-                        <span className="font-medium">
+                        <span className="font-medium text-foreground">
                           {index + 1}. {choice}
                         </span>
                         {index + 1 === result.note!.correctAnswer && (
-                          <span className="ml-2 text-green-600 font-bold">
+                          <span className="ml-2 text-green-400 font-bold">
                             ✓ 正解
                           </span>
                         )}
@@ -322,7 +322,7 @@ export default function HomePage() {
                     {result.note.wellArchitectedCategories.map((category) => (
                       <span
                         key={category}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm"
                       >
                         {category}
                       </span>
@@ -333,7 +333,7 @@ export default function HomePage() {
                       {result.note.relatedServices.map((service) => (
                         <span
                           key={service}
-                          className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
                         >
                           {service}
                         </span>
@@ -341,17 +341,17 @@ export default function HomePage() {
                     </div>
                   )}
                   {result.notionPageId && (
-                    <p className="text-sm text-green-600 mt-2">
+                    <p className="text-sm text-green-400 mt-2">
                       ✓ Notionに保存されました
                     </p>
                   )}
                 </div>
 
                 <section>
-                  <h3 className="font-bold text-lg mb-2 text-slate-800">
+                  <h3 className="font-bold text-lg mb-2 text-foreground">
                     解説
                   </h3>
-                  <div className="bg-slate-50 p-4 rounded-lg space-y-4">
+                  <div className="bg-muted p-4 rounded-lg space-y-4">
                     {(() => {
                       const mermaidData = extractMermaidFromExplanation(
                         result.note.explanation
@@ -360,21 +360,21 @@ export default function HomePage() {
                         return (
                           <>
                             {mermaidData.textBefore && (
-                              <p className="whitespace-pre-wrap text-slate-700">
+                              <p className="whitespace-pre-wrap text-foreground">
                                 {mermaidData.textBefore}
                               </p>
                             )}
                             <div className="my-4">
-                              <h4 className="text-sm font-semibold text-slate-600 mb-2">
+                              <h4 className="text-sm font-semibold text-muted-foreground mb-2">
                                 図解
                               </h4>
                               <div
                                 ref={mermaidRef}
-                                className="flex justify-center items-center bg-white p-4 rounded border overflow-x-auto"
+                                className="flex justify-center items-center bg-card p-4 rounded border border-border overflow-x-auto"
                               />
                             </div>
                             {mermaidData.textAfter && (
-                              <p className="whitespace-pre-wrap text-slate-700">
+                              <p className="whitespace-pre-wrap text-foreground">
                                 {mermaidData.textAfter}
                               </p>
                             )}
@@ -384,10 +384,10 @@ export default function HomePage() {
                       // Mermaid図がない場合（フォールバック）
                       return (
                         <>
-                          <p className="whitespace-pre-wrap text-slate-700">
+                          <p className="whitespace-pre-wrap text-foreground">
                             {result.note.explanation}
                           </p>
-                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                          <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded text-sm text-yellow-400">
                             ⚠️
                             図解が含まれていません。次回の生成時に図解が含まれるように改善します。
                           </div>
@@ -398,7 +398,7 @@ export default function HomePage() {
                 </section>
 
                 <section>
-                  <h3 className="font-bold text-lg mb-2 text-slate-800">
+                  <h3 className="font-bold text-lg mb-2 text-foreground">
                     各選択肢の解説
                   </h3>
                   <div className="space-y-3">
@@ -407,33 +407,37 @@ export default function HomePage() {
                         key={ce.choiceNumber}
                         className={`p-4 rounded-lg border-2 ${
                           ce.isCorrect
-                            ? "border-green-500 bg-green-50"
-                            : "border-red-200 bg-red-50"
+                            ? "border-green-500/50 bg-green-500/10"
+                            : "border-destructive/50 bg-destructive/10"
                         }`}
                       >
-                        <div className="font-semibold mb-2">
+                        <div className="font-semibold mb-2 text-foreground">
                           選択肢{ce.choiceNumber}: {ce.choiceText}
                           <span
                             className={`ml-2 ${
-                              ce.isCorrect ? "text-green-600" : "text-red-600"
+                              ce.isCorrect
+                                ? "text-green-400"
+                                : "text-destructive"
                             }`}
                           >
                             {ce.isCorrect ? "✓ 正解" : "✗ 不正解"}
                           </span>
                         </div>
-                        <p className="text-slate-700">{ce.explanation}</p>
+                        <p className="text-muted-foreground">
+                          {ce.explanation}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </section>
 
                 <section>
-                  <h3 className="font-bold text-lg mb-2 text-slate-800">
+                  <h3 className="font-bold text-lg mb-2 text-foreground">
                     学習ポイント
                   </h3>
-                  <ul className="list-disc list-inside space-y-1 bg-slate-50 p-4 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1 bg-muted p-4 rounded-lg">
                     {result.note.learningPoints.map((point, index) => (
-                      <li key={index} className="text-slate-700">
+                      <li key={index} className="text-foreground">
                         {point}
                       </li>
                     ))}
@@ -442,16 +446,16 @@ export default function HomePage() {
 
                 {result.note.architectureDiagram && (
                   <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">
+                    <h3 className="font-bold text-lg mb-2 text-foreground">
                       Architecture Diagram
                     </h3>
-                    <div className="bg-slate-50 p-4 rounded-lg overflow-x-auto">
+                    <div className="bg-muted p-4 rounded-lg overflow-x-auto">
                       <div
                         ref={architectureDiagramRef}
-                        className="flex justify-center items-center bg-white p-4 rounded border"
+                        className="flex justify-center items-center bg-card p-4 rounded border border-border"
                       />
                     </div>
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-muted-foreground mt-2">
                       ※ Mermaid.js形式で自動レンダリング
                     </p>
                   </section>
@@ -459,11 +463,11 @@ export default function HomePage() {
 
                 {result.note.similarQuestionsHint && (
                   <section>
-                    <h3 className="font-bold text-lg mb-2 text-slate-800">
+                    <h3 className="font-bold text-lg mb-2 text-foreground">
                       類似問題へのヒント
                     </h3>
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                      <p className="text-slate-700">
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-foreground">
                         {result.note.similarQuestionsHint}
                       </p>
                     </div>
