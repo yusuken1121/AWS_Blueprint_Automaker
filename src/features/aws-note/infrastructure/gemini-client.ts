@@ -1,9 +1,13 @@
 /**
  * Gemini 3 Pro API クライアント
- * 修正版: トークン制限回避のためのプロンプト最適化
+ * 統合修正版:
+ * 1. JSONモードによる安定化
+ * 2. Mermaid構文エラー回避（ノードテキストの引用符強制）
+ * 3. カテゴリの表記ゆれ吸収
+ * 4. トークン制限（途中切れ）の回避
  */
 
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type {
   GeminiQuestionAnalysis,
   ExamQuestionInput,
@@ -55,11 +59,11 @@ export class GeminiClient {
     this.model = this.genAI.getGenerativeModel({
       model: "gemini-2.0-flash",
       generationConfig: {
-        temperature: 0.5, // 少し創造性を下げて安定させる
+        temperature: 0.5, // 創造性を抑えてフォーマット遵守を優先
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
-        responseMimeType: "application/json",
+        responseMimeType: "application/json", // JSONモード強制
       },
     });
   }
@@ -96,16 +100,17 @@ export class GeminiClient {
       try {
         parsed = JSON.parse(jsonText);
 
-        // null プロパティのクリーンアップ
+        // データのクリーンアップと正規化
         if (parsed && typeof parsed === "object") {
           const obj = parsed as Record<string, unknown>;
+
+          // null プロパティを undefined に変換
           if (obj.architectureDiagram === null)
             obj.architectureDiagram = undefined;
           if (obj.similarQuestionsHint === null)
             obj.similarQuestionsHint = undefined;
 
-          // wellArchitectedCategories の値を正規化
-          // 人間が読みやすい形式から小文字ハイフン形式に変換
+          // wellArchitectedCategories の値を正規化 (表記ゆれ対応)
           if (
             obj.wellArchitectedCategories &&
             Array.isArray(obj.wellArchitectedCategories)
@@ -130,6 +135,7 @@ export class GeminiClient {
                   sustainability: "sustainability",
                 };
 
+                // マッピングになければ、スペースをハイフンに置換して小文字化
                 return mapping[cat] || cat.toLowerCase().replace(/\s+/g, "-");
               }
             );
@@ -146,9 +152,14 @@ export class GeminiClient {
       }
 
       // スキーマ検証
-      let validated;
       try {
-        validated = GeminiResponseSchema.parse(parsed);
+        const validated = GeminiResponseSchema.parse(parsed);
+
+        return {
+          ...validated,
+          architectureDiagram: validated.architectureDiagram ?? undefined,
+          similarQuestionsHint: validated.similarQuestionsHint ?? undefined,
+        };
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
           logger.error("Schema validation failed", validationError, {
@@ -161,12 +172,6 @@ export class GeminiClient {
         }
         throw validationError;
       }
-
-      return {
-        ...validated,
-        architectureDiagram: validated.architectureDiagram ?? undefined,
-        similarQuestionsHint: validated.similarQuestionsHint ?? undefined,
-      };
     } catch (error) {
       logger.error("Gemini API request failed", error as Error);
       throw error;
@@ -174,7 +179,7 @@ export class GeminiClient {
   }
 
   /**
-   * プロンプト構築（長さを抑制する指示を追加）
+   * プロンプト構築
    */
   private buildQuestionAnalysisPrompt(
     questionInput: ExamQuestionInput
@@ -198,9 +203,9 @@ ${choicesText}
 {
   "correctAnswer": integer,
   "correctChoiceText": string,
-  "explanation": string, // **重要: 500文字以内で、正解の理由と重要な概念のみを簡潔に説明してください。必ず最後にMermaid.js形式の図解（\`\`\`mermaid ... \`\`\`）を含めてください。**
+  "explanation": string, // **重要: 500文字以内で、正解の理由と重要な概念のみを簡潔に説明してください。ここには図解を含めず、テキストのみを記述してください。**
   "relatedServices": string[],
-  "wellArchitectedCategories": string[], // **重要: 以下の値のみ使用（小文字、ハイフン区切り）: "cost-optimization", "performance-efficiency", "reliability", "security", "operational-excellence", "sustainability"。人間が読みやすい形式（"Cost Optimization"など）は使用しないでください。**
+  "wellArchitectedCategories": string[], // "cost-optimization", "performance-efficiency" 等
   "choiceExplanations": [
     {
       "choiceNumber": integer,
@@ -209,14 +214,9 @@ ${choicesText}
       "explanation": string // **重要: 各選択肢につき1-2文で簡潔に記述してください。**
     }
   ],
-  "architectureDiagram": string, // Mermaid.jsコード (graph TD/LR) - オプション
+  "architectureDiagram": string, // **重要: Mermaid.js形式の図解コード (graph TD/LR)。構文エラーを防ぐため、ノード内のテキストは必ず二重引用符で囲んでください。例: A["EC2 (gp3)"] --> B["RDS"]**
   "learningPoints": string[], // 3つまで
-  "similarQuestionsHint": string // オプション
-}
-
-**重要事項:**
-1. wellArchitectedCategories は必ず小文字のハイフン区切り形式で指定してください（例: "cost-optimization" ではなく "Cost Optimization" は不可）
-2. explanation には必ずMermaid.js形式の図解を含めてください（\`\`\`mermaid ... \`\`\`）
-3. JSON文字列内の特殊文字（改行、バッククォートなど）は適切にエスケープしてください`;
+  "similarQuestionsHint": string
+}`;
   }
 }

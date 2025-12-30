@@ -7,3 +7,8 @@ export { GeminiClient } from "./gemini-client";
 export { NotionClient } from "./notion-client";
 export { logger, Logger, LogLevel } from "./logger";
 export type { LogContext } from "./logger";
+export {
+  validateAndFixMermaid,
+  mermaidToTextDiagram,
+} from "./mermaid-validator";
+export type { MermaidValidationResult } from "./mermaid-validator";

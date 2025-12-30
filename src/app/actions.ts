@@ -93,3 +93,39 @@ export async function createExamQuestionNote(
     };
   }
 }
+
+/**
+ * Notionからすべての問題を取得
+ */
+export async function getAllQuestions(): Promise<{
+  success: boolean;
+  questions?: ExamQuestionNote[];
+  error?: string;
+}> {
+  logger.info("getAllQuestions called");
+
+  try {
+    const { notionApiKey, notionDatabaseId } = getEnvVars();
+
+    logger.debug("Initializing Notion client");
+    const notionClient = new NotionClient(notionApiKey, notionDatabaseId);
+
+    logger.info("Fetching all questions from Notion");
+    const questions = await notionClient.getAllQuestions();
+
+    logger.info("Successfully fetched all questions", {
+      count: questions.length,
+    });
+
+    return {
+      success: true,
+      questions,
+    };
+  } catch (error) {
+    logger.error("Failed to fetch questions", error as Error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
