@@ -196,12 +196,20 @@ export default function HomePage() {
             Gemini 3 Pro
             による深い推論とNotion連携で、試験問題の理解を最短距離で習得
           </p>
-          <Link
-            href="/practice"
-            className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium transition"
-          >
-            📚 問題練習ページへ
-          </Link>
+          <div className="flex gap-4 justify-center">
+            <Link
+              href="/practice"
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-medium transition"
+            >
+              📚 問題練習ページへ
+            </Link>
+            <Link
+              href="/extractor"
+              className="inline-block px-6 py-3 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 font-medium transition"
+            >
+              📋 クイズ抽出ツール
+            </Link>
+          </div>
         </header>
 
         <form
