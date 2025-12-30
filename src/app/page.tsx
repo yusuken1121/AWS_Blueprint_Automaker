@@ -8,6 +8,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createExamQuestionNote } from "./actions";
 import type { ExamQuestionNote } from "@/features/aws-note/entities/types";
 import mermaid from "mermaid";
+import {
+  validateAndFixMermaid,
+  mermaidToTextDiagram,
+} from "@/features/aws-note/infrastructure/mermaid-validator";
+import Link from "next/link";
 
 export default function HomePage() {
   const [questionText, setQuestionText] = useState("");
@@ -19,6 +24,7 @@ export default function HomePage() {
     error?: string;
   } | null>(null);
   const mermaidRef = useRef<HTMLDivElement>(null);
+  const architectureDiagramRef = useRef<HTMLDivElement>(null);
 
   // Mermaidの初期化
   useEffect(() => {
@@ -44,7 +50,7 @@ export default function HomePage() {
     return null;
   }, []);
 
-  // Mermaid図をレンダリング
+  // Mermaid図をレンダリング（検証と自動修正付き）
   useEffect(() => {
     if (result?.note?.explanation && mermaidRef.current) {
       const mermaidData = extractMermaidFromExplanation(
@@ -54,20 +60,48 @@ export default function HomePage() {
         // 既存の内容をクリア
         mermaidRef.current.innerHTML = "";
 
-        // ユニークなIDを生成（複数の図がある場合に備えて）
+        // Mermaidコードを検証して修正
+        const validation = validateAndFixMermaid(mermaidData.mermaidCode);
+        const codeToRender = validation.fixedCode || mermaidData.mermaidCode;
+
+        // 警告がある場合は表示
+        if (validation.warnings && validation.warnings.length > 0) {
+          console.warn("Mermaidコードの修正:", validation.warnings);
+        }
+
+        // ユニークなIDを生成
         const diagramId = `mermaid-diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         mermaid
-          .render(diagramId, mermaidData.mermaidCode)
+          .render(diagramId, codeToRender)
           .then(({ svg }) => {
             if (mermaidRef.current) {
               mermaidRef.current.innerHTML = svg;
+              // 警告がある場合は表示
+              if (validation.warnings && validation.warnings.length > 0) {
+                const warningDiv = document.createElement("div");
+                warningDiv.className =
+                  "text-yellow-600 text-xs mt-2 p-2 bg-yellow-50 rounded";
+                warningDiv.textContent = `⚠️ 図解を自動修正しました: ${validation.warnings.join(", ")}`;
+                mermaidRef.current.appendChild(warningDiv);
+              }
             }
           })
           .catch((error) => {
             console.error("Mermaid rendering error:", error);
             if (mermaidRef.current) {
-              mermaidRef.current.innerHTML = `<div class="text-red-600 p-2 bg-red-50 rounded text-sm">Mermaid図のレンダリングエラー: ${error instanceof Error ? error.message : "Unknown error"}</div>`;
+              // エラー時はテキスト図をフォールバックとして表示
+              const textDiagram = mermaidToTextDiagram(codeToRender);
+              mermaidRef.current.innerHTML = `
+                <div class="space-y-2">
+                  <div class="text-red-600 p-2 bg-red-50 rounded text-sm">
+                    ⚠️ Mermaid図のレンダリングエラー: ${error instanceof Error ? error.message : "Unknown error"}
+                  </div>
+                  <div class="text-slate-600 text-xs p-2 bg-slate-50 rounded font-mono whitespace-pre-wrap">
+                    ${textDiagram}
+                  </div>
+                </div>
+              `;
             }
           });
       } else if (mermaidRef.current) {
@@ -76,6 +110,64 @@ export default function HomePage() {
       }
     }
   }, [result?.note?.explanation, extractMermaidFromExplanation]);
+
+  // Architecture Diagramをレンダリング
+  useEffect(() => {
+    if (result?.note?.architectureDiagram && architectureDiagramRef.current) {
+      const diagramCode = result.note.architectureDiagram.trim();
+
+      // 既存の内容をクリア
+      architectureDiagramRef.current.innerHTML = "";
+
+      // Mermaidコードを検証して修正
+      const validation = validateAndFixMermaid(diagramCode);
+      const codeToRender = validation.fixedCode || diagramCode;
+
+      // 警告がある場合は表示
+      if (validation.warnings && validation.warnings.length > 0) {
+        console.warn("Architecture Diagramの修正:", validation.warnings);
+      }
+
+      // ユニークなIDを生成
+      const diagramId = `architecture-diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      mermaid
+        .render(diagramId, codeToRender)
+        .then(({ svg }) => {
+          if (architectureDiagramRef.current) {
+            architectureDiagramRef.current.innerHTML = svg;
+            // 警告がある場合は表示
+            if (validation.warnings && validation.warnings.length > 0) {
+              const warningDiv = document.createElement("div");
+              warningDiv.className =
+                "text-yellow-600 text-xs mt-2 p-2 bg-yellow-50 rounded";
+              warningDiv.textContent = `⚠️ 図解を自動修正しました: ${validation.warnings.join(", ")}`;
+              architectureDiagramRef.current.appendChild(warningDiv);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Architecture Diagram rendering error:", error);
+          if (architectureDiagramRef.current) {
+            // エラー時はテキスト図をフォールバックとして表示
+            const textDiagram = mermaidToTextDiagram(codeToRender);
+            architectureDiagramRef.current.innerHTML = `
+              <div class="space-y-2">
+                <div class="text-red-600 p-2 bg-red-50 rounded text-sm">
+                  ⚠️ Mermaid図のレンダリングエラー: ${error instanceof Error ? error.message : "Unknown error"}
+                </div>
+                <div class="text-slate-600 text-xs p-2 bg-slate-50 rounded font-mono whitespace-pre-wrap">
+                  ${textDiagram}
+                </div>
+              </div>
+            `;
+          }
+        });
+    } else if (architectureDiagramRef.current) {
+      // Architecture Diagramがない場合はクリア
+      architectureDiagramRef.current.innerHTML = "";
+    }
+  }, [result?.note?.architectureDiagram]);
 
   const handleChoiceChange = (index: number, value: string) => {
     const newChoices = [...choices];
@@ -116,10 +208,16 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold text-slate-900 mb-2">
             AWS SAA 学習効率最大化システム
           </h1>
-          <p className="text-slate-600">
+          <p className="text-slate-600 mb-4">
             Gemini 3 Pro
             による深い推論とNotion連携で、試験問題の理解を最短距離で習得
           </p>
+          <Link
+            href="/practice"
+            className="inline-block px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition"
+          >
+            📚 問題練習ページへ
+          </Link>
         </header>
 
         <form
@@ -348,12 +446,13 @@ export default function HomePage() {
                       Architecture Diagram
                     </h3>
                     <div className="bg-slate-50 p-4 rounded-lg overflow-x-auto">
-                      <pre className="text-xs text-slate-600 font-mono">
-                        {result.note.architectureDiagram}
-                      </pre>
+                      <div
+                        ref={architectureDiagramRef}
+                        className="flex justify-center items-center bg-white p-4 rounded border"
+                      />
                     </div>
                     <p className="text-sm text-slate-500 mt-2">
-                      ※ Mermaid.js形式。Notionでレンダリング可能
+                      ※ Mermaid.js形式で自動レンダリング
                     </p>
                   </section>
                 )}

@@ -217,4 +217,244 @@ export class NotionClient {
 
     return properties;
   }
+
+  /**
+   * Notionからすべての問題を取得
+   */
+  async getAllQuestions(): Promise<ExamQuestionNote[]> {
+    logger.info("Fetching all questions from Notion", {
+      databaseId: this.databaseId,
+    });
+
+    try {
+      const questions: ExamQuestionNote[] = [];
+      let hasMore = true;
+      let startCursor: string | undefined = undefined;
+
+      // ページネーションで全データを取得
+      while (hasMore) {
+        const response = await this.notion.databases.query({
+          database_id: this.databaseId,
+          start_cursor: startCursor,
+          page_size: 100, // Notion APIの最大値
+        });
+
+        for (const page of response.results) {
+          try {
+            const question = await this.parseNotionPage(page);
+            if (question) {
+              questions.push(question);
+            }
+          } catch (error) {
+            logger.warn("Failed to parse Notion page", {
+              pageId: page.id,
+              error: error instanceof Error ? error.message : "Unknown error",
+            });
+          }
+        }
+
+        hasMore = response.has_more;
+        startCursor = response.next_cursor || undefined;
+      }
+
+      logger.info("Successfully fetched all questions", {
+        count: questions.length,
+      });
+
+      return questions;
+    } catch (error) {
+      logger.error("Failed to fetch questions from Notion", error as Error, {
+        databaseId: this.databaseId,
+      });
+      throw new Error(
+        `Failed to fetch questions from Notion: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  /**
+   * NotionページをExamQuestionNoteに変換
+   */
+  private async parseNotionPage(page: any): Promise<ExamQuestionNote | null> {
+    try {
+      const props = page.properties;
+
+      // 必須プロパティの取得
+      const questionText =
+        props["Question Text"]?.title?.[0]?.text?.content || "";
+      if (!questionText) {
+        logger.warn("Page missing question text", { pageId: page.id });
+        return null;
+      }
+
+      // Choicesの取得（rich_textから）
+      const choicesText = props.Choices?.rich_text?.[0]?.text?.content || "";
+      const choices = choicesText
+        .split("\n")
+        .map((line: string) => line.replace(/^\d+\.\s*/, "").trim())
+        .filter((choice: string) => choice.length > 0);
+
+      if (choices.length === 0) {
+        logger.warn("Page missing choices", { pageId: page.id });
+        return null;
+      }
+
+      // Correct Answerの取得
+      const correctAnswer = props["Correct Answer"]?.number;
+      if (
+        !correctAnswer ||
+        correctAnswer < 1 ||
+        correctAnswer > choices.length
+      ) {
+        logger.warn("Page has invalid correct answer", {
+          pageId: page.id,
+          correctAnswer,
+        });
+        return null;
+      }
+
+      // Correct Choice Textの取得
+      const correctChoiceText =
+        props["Correct Choice Text"]?.rich_text?.[0]?.text?.content || "";
+
+      // Explanationの取得
+      const explanation =
+        props.Explanation?.rich_text?.[0]?.text?.content || "";
+
+      // Related Servicesの取得
+      const relatedServices =
+        props["Related Services"]?.multi_select?.map(
+          (item: { name: string }) => item.name
+        ) || [];
+
+      // Well-Architected Categoryの取得
+      const wellArchitectedCategoriesRaw =
+        props["Well-Architected Category"]?.multi_select?.map(
+          (item: { name: string }) => item.name
+        ) || [];
+
+      // Well-Architectedカテゴリを正しい形式に変換
+      const wellArchitectedCategories = wellArchitectedCategoriesRaw.map(
+        (cat: string) => {
+          // ハイフン形式に変換（例: "Cost Optimization" -> "cost-optimization"）
+          return cat
+            .toLowerCase()
+            .replace(
+              /\s+/g,
+              "-"
+            ) as ExamQuestionNote["wellArchitectedCategories"][0];
+        }
+      );
+
+      // Choice Explanationsの取得とパース
+      const choiceExplanationsText =
+        props["Choice Explanations"]?.rich_text?.[0]?.text?.content || "";
+      const choiceExplanations = this.parseChoiceExplanations(
+        choiceExplanationsText,
+        choices,
+        correctAnswer
+      );
+
+      // Learning Pointsの取得
+      const learningPointsText =
+        props["Learning Points"]?.rich_text?.[0]?.text?.content || "";
+      const learningPoints = learningPointsText
+        .split("\n• ")
+        .map((point: string) => point.trim())
+        .filter((point: string) => point.length > 0);
+
+      // Architecture Diagramの取得（オプション）
+      const architectureDiagram =
+        props["Architecture Diagram"]?.rich_text?.[0]?.text?.content ||
+        undefined;
+
+      // Similar Questions Hintの取得（オプション）
+      const similarQuestionsHint =
+        props["Similar Questions Hint"]?.rich_text?.[0]?.text?.content ||
+        undefined;
+
+      return {
+        questionText,
+        choices,
+        correctAnswer,
+        correctChoiceText,
+        explanation,
+        relatedServices,
+        wellArchitectedCategories,
+        choiceExplanations,
+        learningPoints,
+        architectureDiagram,
+        similarQuestionsHint,
+      };
+    } catch (error) {
+      logger.error("Error parsing Notion page", error as Error, {
+        pageId: page.id,
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Choice Explanationsテキストをパース
+   */
+  private parseChoiceExplanations(
+    text: string,
+    choices: string[],
+    correctAnswer: number
+  ): ExamQuestionNote["choiceExplanations"] {
+    const explanations: ExamQuestionNote["choiceExplanations"] = [];
+    const sections = text.split(/【選択肢\d+】/).filter((s) => s.trim());
+
+    for (const section of sections) {
+      const lines = section.trim().split("\n");
+      if (lines.length < 2) continue;
+
+      const firstLine = lines[0];
+      const isCorrect = firstLine.includes("✓ 正解");
+      const choiceText = lines[1]?.trim() || "";
+      const explanation = lines.slice(2).join("\n").trim();
+
+      // 選択肢番号を特定
+      const choiceNumber = choices.findIndex(
+        (c) => c === choiceText || c.includes(choiceText)
+      );
+      if (choiceNumber === -1) continue;
+
+      explanations.push({
+        choiceNumber: choiceNumber + 1,
+        choiceText,
+        isCorrect,
+        explanation,
+      });
+    }
+
+    // パースに失敗した場合は、choicesから生成
+    if (explanations.length === 0) {
+      return choices.map((choice, index) => ({
+        choiceNumber: index + 1,
+        choiceText: choice,
+        isCorrect: index + 1 === correctAnswer,
+        explanation: "",
+      }));
+    }
+
+    // すべての選択肢が含まれているか確認し、不足している場合は追加
+    const existingNumbers = new Set(explanations.map((e) => e.choiceNumber));
+    for (let i = 0; i < choices.length; i++) {
+      const choiceNumber = i + 1;
+      if (!existingNumbers.has(choiceNumber)) {
+        explanations.push({
+          choiceNumber,
+          choiceText: choices[i],
+          isCorrect: false,
+          explanation: "",
+        });
+      }
+    }
+
+    // 選択肢番号でソート
+    explanations.sort((a, b) => a.choiceNumber - b.choiceNumber);
+
+    return explanations;
+  }
 }
