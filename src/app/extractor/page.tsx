@@ -6,9 +6,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ExtractedQuiz } from "@/features/quiz-extractor/entities/types";
 
 export default function ExtractorPage() {
+  const router = useRouter();
   const [htmlInput, setHtmlInput] = useState("");
   const [result, setResult] = useState<ExtractedQuiz | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,7 @@ export default function ExtractorPage() {
   /**
    * HTMLからクイズデータを抽出
    */
-  const handleExtract = async () => {
+  const processExtraction = async (shouldRedirect: boolean) => {
     // リセット
     setResult(null);
     setError(null);
@@ -46,6 +48,18 @@ export default function ExtractorPage() {
 
       if (data.success && data.data) {
         setResult(data.data);
+
+        if (shouldRedirect) {
+          sessionStorage.setItem(
+            "quiz_extractor_data",
+            JSON.stringify({
+              question: data.data.question,
+              options: data.data.options,
+              autoGenerate: true,
+            })
+          );
+          router.push("/");
+        }
       } else {
         setError(data.error || "抽出に失敗しました");
       }
@@ -57,6 +71,9 @@ export default function ExtractorPage() {
       setLoading(false);
     }
   };
+
+  const handleExtract = () => processExtraction(false);
+  const handleExtractAndGenerate = () => processExtraction(true);
 
   /**
    * 問題文のみをクリップボードにコピー
@@ -150,11 +167,18 @@ export default function ExtractorPage() {
 
           <div className="flex gap-4 mt-4">
             <button
+              onClick={handleExtractAndGenerate}
+              disabled={loading || !htmlInput.trim()}
+              className="flex-1 px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+            >
+              {loading ? "処理中..." : "抽出して解説生成 🚀"}
+            </button>
+            <button
               onClick={handleExtract}
               disabled={loading || !htmlInput.trim()}
-              className="px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="px-6 py-2 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {loading ? "抽出中..." : "Extract Data"}
+              {loading ? "..." : "抽出のみ"}
             </button>
           </div>
 

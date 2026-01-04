@@ -185,10 +185,9 @@ export default function HomePage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!questionText.trim()) return;
-    if (choices.filter((c) => c.trim()).length < 2) {
+  const executeGeneration = async (q: string, c: string[]) => {
+    if (!q.trim()) return;
+    if (c.filter((ch) => ch.trim()).length < 2) {
       alert("選択肢は最低2つ入力してください");
       return;
     }
@@ -198,8 +197,8 @@ export default function HomePage() {
 
     try {
       const response = await createExamQuestionNote({
-        questionText: questionText.trim(),
-        choices: choices.filter((c) => c.trim()),
+        questionText: q.trim(),
+        choices: c.filter((ch) => ch.trim()),
       });
       setResult(response);
     } catch (error) {
@@ -210,6 +209,43 @@ export default function HomePage() {
       setLoading(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeGeneration(questionText, choices);
+  };
+
+  // 抽出されたデータがsessionStorageにある場合に自動入力・生成
+  useEffect(() => {
+    const storedData = sessionStorage.getItem("quiz_extractor_data");
+    if (storedData) {
+      try {
+        const { question, options, autoGenerate } = JSON.parse(storedData);
+
+        // データをセット
+        setQuestionText(question || "");
+
+        // 選択肢をセット（足りない場合は空文字で埋める）
+        let newChoices = Array.isArray(options) ? options : ["", "", "", ""];
+        if (newChoices.length < 4) {
+          const padding = new Array(4 - newChoices.length).fill("");
+          newChoices = [...newChoices, ...padding];
+        }
+        setChoices(newChoices);
+
+        // データをクリア
+        sessionStorage.removeItem("quiz_extractor_data");
+
+        // 自動生成フラグがあれば生成を実行
+        // ステート更新は非同期なので、引数で直接渡す
+        if (autoGenerate && question && newChoices.length >= 2) {
+          executeGeneration(question, newChoices);
+        }
+      } catch (e) {
+        console.error("Failed to load extracted quiz data:", e);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background p-8">
