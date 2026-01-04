@@ -525,7 +525,7 @@ export default function HomePage() {
                     <div className="bg-muted p-4 rounded-lg overflow-x-auto">
                       <div
                         ref={architectureDiagramRef}
-                        className="flex justify-center items-center bg-card p-4 rounded border border-border"
+                        className="flex justify-center items-center bg-white p-4 rounded border border-border"
                       />
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
